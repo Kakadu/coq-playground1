@@ -355,22 +355,17 @@ Theorem while_true : forall b c,
     <{ while b do c end }>
     <{ while true do skip end }>.
 Proof.
-  (*
   intros. unfold cequiv. intros. split.
   Focus 2. intros.
-  apply (E_WhileTrue st st st' <{ true }> <{ skip }> ).
-  + intros. Search "while_true_nonterm".
-  unfold bequiv in H.
-  remember (H st) as H2. simpl in H2.
-  apply (E_WhileTrue st st st' <{ true }> <{ skip }> ).
-  *)
-  (* apply (E_WhileTrue st st').
-     - unfold beval. auto.
-     -    *)
-
-
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  (* WHY ??? *)
+  inversion H0; subst.
+  - unfold beval in H5. inversion H5.
+  - intros.
+    apply (while_true_nonterm) in H0.
+    + contradiction.
+    + assumption.
+  - apply (while_true_nonterm) in H0. contradiction. unfold bequiv. reflexivity.
+Qed.
 
 (** A more interesting fact about [while] commands is that any number
     of copies of the body can be "unrolled" without changing meaning.
@@ -451,13 +446,26 @@ Theorem assign_aequiv : forall (x : string) a,
   cequiv <{ skip }> <{ x := a }>.
 Proof.
   Print aequiv.
-  Locate string.
   intros. split.
+  Focus 2. intros. unfold aequiv in H.
+   inversion H0; subst.
+   remember (H st).
+    rewrite <- e.
+    Search aeval.
+    unfold aeval.
+     assert (Hx : st = (x !-> st x ; st)).
+    { rewrite t_update_same. reflexivity. }
+    rewrite <- Hx. apply E_Skip.
   + (* -> *)
     intros. unfold aequiv in H; simpl. remember (H st) as Eq_xa.
-    unfold aeval in Eq_xa; simpl.
-    eapply E_Asgn.
-  (* FILL IN HERE *) Admitted.
+    (* unfold aeval in Eq_xa; simpl. *)
+    inversion H0; subst.
+    assert (st' = (x !-> aeval st' a; st')).
+    { rewrite <- H.
+      rewrite t_update_same. reflexivity. }
+    rewrite H1 at 2.
+    eapply E_Asgn. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars, standard (equiv_classes) *)
@@ -629,6 +637,7 @@ Proof.
   split; intros Hceval.
   - (* -> *)
     inversion Hceval. subst. apply E_Asgn.
+    unfold aequiv in Heqv.
     rewrite Heqv. reflexivity.
   - (* <- *)
     inversion Hceval. subst. apply E_Asgn.
