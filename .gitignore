@@ -1,0 +1,8 @@
+
+
+*.vo*
+*.glob
+*.aux
+.*.html
+.lia.cache
+.Makefile.coq.d

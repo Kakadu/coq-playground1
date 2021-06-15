@@ -1,0 +1,13 @@
+(executable
+ (modules demo Test TestCo)
+ (name demo))
+
+(coq.extraction
+  (prelude Test)
+  (extracted_modules Test)
+  )
+
+(coq.extraction
+  (prelude TestCo)
+  (extracted_modules TestCo)
+  )
