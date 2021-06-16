@@ -7,7 +7,7 @@
   (extracted_modules Test)
   )
 
-(coq.extraction
-  (prelude TestCo)
-  (extracted_modules TestCo)
-  )
+ (coq.extraction
+   (prelude TestCo)
+   (extracted_modules TestCo)
+   )

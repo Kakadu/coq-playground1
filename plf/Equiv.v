@@ -95,6 +95,7 @@ Definition bequiv (b1 b2 : bexp) : Prop :=
 Theorem aequiv_example: aequiv <{ X - X }> <{ 0 }>.
 Proof.
   intros st. simpl. lia.
+  Search "qequiv".
 Qed.
 
 Theorem bequiv_example: bequiv <{ X - X = 0 }> <{ true }>.
