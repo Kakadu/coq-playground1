@@ -87,9 +87,22 @@ Section stream2.
   | Delay : stream -> stream
   | Nil : stream
   .
-
+(*
+  Inductive WellFoundStream (s: stream) : Prop :=
+  | WFSNil  : (s=Nil) ->  WellFoundStream s
+  | WFSCons : forall (a:A) (tl: stream),
+      (s = Cons a tl) -> WellFoundStream tl -> WellFoundStream s
+  | WFSDelay: forall (tl: stream),
+      (s = Delay tl) -> WellFoundStream tl -> WellFoundStream s.
+*)
   (* https://www.labri.fr/perso/casteran/RecTutorial.pdf *)
   Print Acc.
+
+  Definition force l :=
+    match l with
+    | Delay s => s
+    | s => s
+    end.
 
   Fail CoFixpoint mplus (l r: stream)  : stream :=
     match l with
@@ -110,7 +123,88 @@ Section stream2.
         end
     end.
 
+  Fail CoFixpoint mplus (xs ys: stream) :=
+    match xs with
+    | Nil => force ys
+    | Cons h tl => Cons h (mplus r tl)
+    | Delay _ => Delay (mplus (force r) old)
+    end.
+
 End stream2.
+
+
+
+Module Stream3.
+
+  (* TODO: remeber that streams is extracted with Lazy *)
+  CoInductive stream (A: Type): Type :=
+  | Cons : A -> stream A -> stream A
+  | Delay : stream A -> stream A
+  | Nil : stream A.
+
+  Definition from_fun z := Delay z.
+
+  (* Added only to `force` the stream that will be extracted
+    as OCaml lazy value *)
+  Definition force_lazy {A: Type} (s: stream A) :=
+    match s with
+    | Nil _ => Nil _
+    | Delay _ s => Delay _ s
+    | Cons _ h tl => Cons _ h tl
+    end.
+
+  (* Removes Delay constructor *)
+  Definition force {A: Type} (x: stream A) :=
+    match x with
+    | Delay _ zz => force_lazy zz
+    | xs => xs end.
+
+  CoFixpoint mplus {A: Type} (xs ys: stream A) :=
+    match xs with
+    | Nil _ => force ys
+    | Cons _ x xs => Cons _ x (from_fun A (mplus (force ys) xs))
+    | Delay _ _ => from_fun _ (mplus (force ys) xs)
+    end.
+
+  CoFixpoint bind {A: Type} (s: stream A) (f: A -> stream A) : stream A :=
+    match s with
+    | Nil _ => Nil _
+    | Cons _ x tl =>
+        (* TODO: prove that mplus either introduces constructor
+                                  or doesn't do recursive call
+                                  *)
+        mplus (force_lazy (f x))
+          (from_fun _ (bind (force tl) f))
+    | Delay _ zz => from_fun _ (bind (force_lazy zz) f)
+    end.
+
+  (*
+  Recursive definition of bind is ill-formed.
+  In environment
+  bind :
+  forall (A : Type) (_ : stream A) (_ : forall _ : A, stream A), stream A
+  A : Type
+  s : stream A
+  f : forall _ : A, stream A
+  x : A
+  tl : stream A
+  Unguarded recursive call in
+  "cofix mplus (A : Type) (xs ys : stream A) : stream A :=
+    match xs with
+    | Cons _ x xs0 => Cons A x (from_fun A (mplus A (force ys) xs0))
+    | Delay _ _ => from_fun A (mplus A (force ys) xs)
+    | Nil _ => force ys
+    end".
+  Recursive definition is:
+  "fun (A : Type) (s : stream A) (f : forall _ : A, stream A) =>
+  match s with
+  | Cons _ x tl => mplus (f x) (from_fun A (bind A (force tl) f))
+  | Delay _ zz => from_fun A (bind A (force_lazy zz) f)
+  | Nil _ => Nil A
+  end".
+  *)
+
+End Stream3.
 
 Section MK.
 
